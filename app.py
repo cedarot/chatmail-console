@@ -250,7 +250,7 @@ class SourceAdapter:
             for _ in range(4):
                 next_frontier = [child for parent in frontier for child in parent.iterdir() if child.is_dir()]
                 candidates.extend(child for child in next_frontier if "@" in child.name)
-                frontier = next_frontier
+                frontier = [child for child in next_frontier if "@" not in child.name]
         except OSError as exc:
             raise SourceUnavailable("Configured mailbox directory is unavailable") from exc
         for candidate in candidates:
