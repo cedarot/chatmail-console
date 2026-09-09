@@ -31,6 +31,19 @@ class AppTests(unittest.TestCase):
             self.assertEqual(adapter.logins()[0]['userId'], 'a')
             self.assertEqual(adapter.access()[0]['path'], '/x')
 
+    def test_production_metadata_adapters_do_not_read_mailbox_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            mailbox = root / 'mail' / 'mail' / 'talk.example'
+            (mailbox / 'alice@talk.example').mkdir(parents=True)
+            (mailbox / 'bob@talk.example').mkdir()
+            log = root / 'chatmail.json.log'
+            log.write_text(json.dumps({'log': 'imap-login: Login: user=<alice@talk.example>, method=PLAIN, rip=203.0.113.9, lip=172.23.0.2, TLS', 'time': '2099-01-02T09:30:00Z'}) + '\n', encoding='utf-8')
+            config = Config('127.0.0.1', 0, 'admin', 'password', 'x' * 32, f'maildir:{root / "mail"}', f'docker-json:{log}', root / 'missing-access.log', True, 24 * 365, 50, False, 20000)
+            adapter = SourceAdapter(config)
+            self.assertEqual([item['userId'] for item in adapter.users()], ['alice@talk.example', 'bob@talk.example'])
+            self.assertEqual(adapter.logins()[0]['ip'], '203.0.113.9')
+
     def test_http_authentication_and_dashboard(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

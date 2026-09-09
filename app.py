@@ -66,9 +66,9 @@ class Config:
     admin_username: str
     admin_password: str
     session_secret: str
-    users_source: Path
-    logins_source: Path
-    access_log_source: Path
+    users_source: str
+    logins_source: str
+    access_log_source: str
     ip_masking: bool
     retention_hours: int
     page_size_max: int
@@ -83,9 +83,9 @@ class Config:
             admin_username=os.getenv("ADMIN_USERNAME", ""),
             admin_password=os.getenv("ADMIN_PASSWORD", ""),
             session_secret=os.getenv("SESSION_SECRET", ""),
-            users_source=Path(os.getenv("USERS_SOURCE", "/data/users.json")),
-            logins_source=Path(os.getenv("LOGINS_SOURCE", "/data/logins.json")),
-            access_log_source=Path(os.getenv("ACCESS_LOG_SOURCE", "/data/access.log")),
+            users_source=os.getenv("USERS_SOURCE", "/data/users.json"),
+            logins_source=os.getenv("LOGINS_SOURCE", "/data/logins.json"),
+            access_log_source=os.getenv("ACCESS_LOG_SOURCE", "/data/access.log"),
             ip_masking=env_bool("IP_MASKING", True),
             retention_hours=env_int("RETENTION_HOURS", 168, 1, 24 * 365),
             page_size_max=env_int("PAGE_SIZE_MAX", 50, 1, 500),
@@ -217,9 +217,12 @@ class SourceAdapter:
         self.cutoff = lambda: now_utc() - timedelta(hours=config.retention_hours)
 
     def users(self) -> list[dict[str, Any]]:
+        source = str(self.config.users_source)
+        if source.startswith("maildir:"):
+            return self.maildir_users(Path(source.removeprefix("maildir:")))
         records: list[dict[str, Any]] = []
         seen: set[str] = set()
-        for item in json_items(self.config.users_source, ("users", "items")):
+        for item in json_items(Path(source), ("users", "items")):
             if isinstance(item, dict):
                 user_id = item.get("userId") or item.get("id") or item.get("username")
                 label = item.get("label") or item.get("displayName")
@@ -235,10 +238,35 @@ class SourceAdapter:
         records.sort(key=lambda item: item["userId"].lower())
         return records
 
-    def logins(self) -> list[dict[str, Any]]:
+    def maildir_users(self, root: Path) -> list[dict[str, Any]]:
+        """Enumerate mailbox directory names only; never reads mailbox files."""
+        if not root.is_dir():
+            raise SourceUnavailable("Configured mailbox directory is unavailable")
         records: list[dict[str, Any]] = []
         seen: set[str] = set()
-        for item in json_items(self.config.logins_source, ("logins", "events", "items")):
+        try:
+            level_one = list(root.iterdir())
+            level_two = [item for item in level_one if item.is_dir()]
+            domains = [item for item in level_two for item in item.iterdir() if item.is_dir()]
+            candidates = [item for domain in domains for item in domain.iterdir() if item.is_dir()]
+        except OSError as exc:
+            raise SourceUnavailable("Configured mailbox directory is unavailable") from exc
+        for candidate in candidates:
+            user_id = candidate.name
+            if "@" not in user_id or user_id.startswith(".") or user_id in seen:
+                continue
+            seen.add(user_id)
+            records.append({"userId": user_id, "label": None})
+        records.sort(key=lambda item: item["userId"].lower())
+        return records
+
+    def logins(self) -> list[dict[str, Any]]:
+        source = str(self.config.logins_source)
+        if source.startswith("docker-json:"):
+            return self.docker_json_logins(Path(source.removeprefix("docker-json:")))
+        records: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for item in json_items(Path(source), ("logins", "events", "items")):
             if not isinstance(item, dict):
                 continue
             timestamp = parse_timestamp(item.get("timestamp") or item.get("time") or item.get("createdAt"))
@@ -263,9 +291,46 @@ class SourceAdapter:
             )
         return sorted(records, key=lambda item: item["_timestamp"], reverse=True)
 
+    def docker_json_logins(self, path: Path) -> list[dict[str, Any]]:
+        """Parse Dovecot imap-login records from Docker's JSON log driver."""
+        login_line = re.compile(r"imap-login: Login: user=<([^>]+)>.*?rip=([^,\s]+)")
+        try:
+            with path.open("r", encoding="utf-8", errors="replace") as handle:
+                lines = deque(handle, maxlen=self.config.access_log_max_lines)
+        except OSError as exc:
+            raise SourceUnavailable("Configured Chatmail container log is unavailable") from exc
+        records: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for line in lines:
+            try:
+                payload = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            message = str(payload.get("log", ""))
+            match = login_line.search(message)
+            timestamp = parse_timestamp(payload.get("time"))
+            if not match or not timestamp or timestamp < self.cutoff():
+                continue
+            user_id, ip = match.groups()
+            event_id = safe_event_id("login", (user_id, timestamp, ip))
+            if event_id in seen:
+                continue
+            seen.add(event_id)
+            records.append(
+                {
+                    "eventId": event_id,
+                    "userId": user_id,
+                    "timestamp": isoformat(timestamp),
+                    "_timestamp": timestamp,
+                    "ip": ip,
+                    "device": "Unavailable",
+                }
+            )
+        return sorted(records, key=lambda item: item["_timestamp"], reverse=True)
+
     def access(self) -> list[dict[str, Any]]:
         try:
-            with self.config.access_log_source.open("r", encoding="utf-8", errors="replace") as handle:
+            with Path(str(self.config.access_log_source)).open("r", encoding="utf-8", errors="replace") as handle:
                 lines = deque(handle, maxlen=self.config.access_log_max_lines)
         except OSError as exc:
             raise SourceUnavailable(f"Unable to read configured source: {self.config.access_log_source.name}") from exc
