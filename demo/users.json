@@ -1,0 +1,5 @@
+[
+  {"userId": "alice@example.test", "label": "Alice"},
+  {"userId": "bob@example.test", "label": "Bob"},
+  {"userId": "carol@example.test", "label": "Carol"}
+]
