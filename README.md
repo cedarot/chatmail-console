@@ -25,6 +25,48 @@ docker compose up -d --build
 
 Open `http://127.0.0.1:8080`. The default Compose bind address is loopback. For production, put the service behind HTTPS and an admin-only network or allowlist, set `COOKIE_SECURE=true`, and change `CHATMAIL_DATA_DIR` to a read-only directory containing the authorized source files. Do not bind this console publicly without a security review.
 
+## Deploy a reviewed release
+
+The production host uses immutable release directories and a `current` symlink. Keep the runtime `.env` outside the source releases; it contains the administrator password and session secret and must never be committed.
+
+Prepare the host once, then create `/srv/chatmail-console/.env` from `.env.example` with the production source paths. Transfer the private file over SSH and restrict it to root:
+
+```sh
+ssh root@8.166.118.0 'install -d -m 700 /srv/chatmail-console /srv/chatmail-console/data'
+scp .env root@8.166.118.0:/srv/chatmail-console/.env
+ssh root@8.166.118.0 'chmod 600 /srv/chatmail-console/.env'
+```
+
+From a clean checkout of the reviewed branch, archive the exact revision to the host and rebuild the console:
+
+```sh
+DEPLOY_HOST=8.166.118.0
+DEPLOY_ROOT=/srv/chatmail-console
+REVISION=$(git rev-parse HEAD)
+test -z "$(git status --porcelain)"
+
+git archive --format=tar "$REVISION" | ssh root@"$DEPLOY_HOST" "set -eu
+release=$DEPLOY_ROOT/releases/$REVISION
+mkdir -p \"\$release\"
+tar -xf - -C \"\$release\"
+ln -sfn $DEPLOY_ROOT/.env \"\$release/.env\"
+ln -sfn \"\$release\" $DEPLOY_ROOT/current
+docker compose -p chatmail-console -f $DEPLOY_ROOT/current/docker-compose.yml --env-file $DEPLOY_ROOT/.env up -d --build
+"
+```
+
+Verify the release locally on the host. The health endpoint must succeed and the container should report `healthy`:
+
+```sh
+ssh root@8.166.118.0 'curl -fsS http://127.0.0.1:18080/healthz && docker inspect --format "{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}" chatmail-console-chatmail-console-1'
+```
+
+To roll back, point `current` at a previously verified release and recreate the service without rebuilding:
+
+```sh
+ssh root@8.166.118.0 'set -eu; ln -sfn /srv/chatmail-console/releases/<known-good-revision> /srv/chatmail-console/current; docker compose -p chatmail-console -f /srv/chatmail-console/current/docker-compose.yml --env-file /srv/chatmail-console/.env up -d --no-build'
+```
+
 ## Configuration
 
 | Variable | Purpose | Default |
