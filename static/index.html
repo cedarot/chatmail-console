@@ -16,11 +16,32 @@
       <article class="summary-card"><span class="label">Website accesses</span><strong id="access-count">—</strong><span class="muted">Current retention window</span></article>
     </section>
 
-    <section class="panel"><div class="panel-heading"><div><p class="eyebrow">IDENTITY</p><h2>Users</h2></div><span id="users-status" class="badge">—</span></div><form id="users-filter" class="filters"><label>User ID<input name="query" placeholder="Search by ID"></label><button class="button" type="submit">Search</button></form><div class="table-wrap"><table><thead><tr><th>User ID</th><th>Display label</th></tr></thead><tbody id="users-table"></tbody></table></div><div class="pager"><button id="users-prev" class="button secondary">Previous</button><span id="users-page" class="muted">Page 1</span><button id="users-next" class="button secondary">Next</button></div></section>
+    <section class="tabs-shell" aria-label="Dashboard views">
+      <nav class="tabs" role="tablist" aria-label="Dashboard sections">
+        <button id="tab-activities" class="tab is-active" type="button" role="tab" aria-selected="true" aria-controls="panel-activities" data-tab="activities">Recent activities</button>
+        <button id="tab-logins" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-logins" data-tab="logins" tabindex="-1">Recent logins</button>
+        <button id="tab-access" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-access" data-tab="access" tabindex="-1">Access events</button>
+        <button id="tab-users" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-users" data-tab="users" tabindex="-1">Users</button>
+      </nav>
 
-    <section class="panel"><div class="panel-heading"><div><p class="eyebrow">AUTHENTICATION</p><h2>Recent logins</h2></div><span id="logins-status" class="badge">—</span></div><form id="logins-filter" class="filters"><label>User ID<input name="userId" placeholder="Filter by user"></label><label>IP address<input name="ip" placeholder="Masked or full IP"></label><label>From<input name="from" type="datetime-local"></label><label>To<input name="to" type="datetime-local"></label><button class="button" type="submit">Filter</button></form><div class="table-wrap"><table><thead><tr><th>Time (UTC)</th><th>User ID</th><th>IP address</th><th>Device</th></tr></thead><tbody id="logins-table"></tbody></table></div></section>
+      <section id="panel-activities" class="panel tab-panel is-active" role="tabpanel" aria-labelledby="tab-activities">
+        <div class="panel-heading"><div><p class="eyebrow">OVERVIEW</p><h2>Recent activities</h2></div><span class="badge">Latest events</span></div>
+        <p class="muted panel-intro">A combined view of the latest login and website-access activity.</p>
+        <div class="table-wrap"><table><thead><tr><th>Time (UTC)</th><th>Activity</th><th>User ID / IP address</th><th>Device</th><th>Details</th></tr></thead><tbody id="activities-table"></tbody></table></div>
+      </section>
 
-    <section class="panel"><div class="panel-heading"><div><p class="eyebrow">WEBSITE ACTIVITY</p><h2>Access events</h2></div><span id="access-status" class="badge">—</span></div><form id="access-filter" class="filters"><label>IP address<input name="ip" placeholder="Masked or full IP"></label><label>Path<input name="path" placeholder="/route"></label><label>Method<select name="method"><option value="">Any</option><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option><option>HEAD</option></select></label><label>Status<select name="statusClass"><option value="">Any</option><option value="2">2xx</option><option value="3">3xx</option><option value="4">4xx</option><option value="5">5xx</option></select></label><button class="button" type="submit">Filter</button></form><div class="table-wrap"><table><thead><tr><th>Time (UTC)</th><th>IP address</th><th>Device</th><th>Method</th><th>Path</th><th>Status</th><th>Bytes</th></tr></thead><tbody id="access-table"></tbody></table></div></section>
+      <section id="panel-logins" class="panel tab-panel" role="tabpanel" aria-labelledby="tab-logins" hidden>
+        <div class="panel-heading"><div><p class="eyebrow">AUTHENTICATION</p><h2>Recent logins</h2></div><span id="logins-status" class="badge">—</span></div><form id="logins-filter" class="filters"><label>User ID<input name="userId" placeholder="Filter by user"></label><label>IP address<input name="ip" placeholder="Full IP address"></label><label>From<input name="from" type="datetime-local"></label><label>To<input name="to" type="datetime-local"></label><button class="button" type="submit">Filter</button></form><div class="table-wrap"><table><thead><tr><th>Time (UTC)</th><th>User ID</th><th>IP address</th><th>Device</th></tr></thead><tbody id="logins-table"></tbody></table></div>
+      </section>
+
+      <section id="panel-access" class="panel tab-panel" role="tabpanel" aria-labelledby="tab-access" hidden>
+        <div class="panel-heading"><div><p class="eyebrow">WEBSITE ACTIVITY</p><h2>Access events</h2></div><span id="access-status" class="badge">—</span></div><form id="access-filter" class="filters"><label>IP address<input name="ip" placeholder="Full IP address"></label><label>Path<input name="path" placeholder="/route"></label><label>Method<select name="method"><option value="">Any</option><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option><option>HEAD</option></select></label><label>Status<select name="statusClass"><option value="">Any</option><option value="2">2xx</option><option value="3">3xx</option><option value="4">4xx</option><option value="5">5xx</option></select></label><button class="button" type="submit">Filter</button></form><div class="table-wrap"><table><thead><tr><th>Time (UTC)</th><th>IP address</th><th>Device</th><th>Method</th><th>Path</th><th>Status</th><th>Bytes</th></tr></thead><tbody id="access-table"></tbody></table></div>
+      </section>
+
+      <section id="panel-users" class="panel tab-panel" role="tabpanel" aria-labelledby="tab-users" hidden>
+        <div class="panel-heading"><div><p class="eyebrow">IDENTITY</p><h2>Users</h2></div><span id="users-status" class="badge">—</span></div><form id="users-filter" class="filters"><label>User ID<input name="query" placeholder="Search by ID"></label><button class="button" type="submit">Search</button></form><div class="table-wrap"><table><thead><tr><th>User ID</th><th>Display label</th></tr></thead><tbody id="users-table"></tbody></table></div><div class="pager"><button id="users-prev" class="button secondary">Previous</button><span id="users-page" class="muted">Page 1</span><button id="users-next" class="button secondary">Next</button></div>
+      </section>
+    </section>
     <p class="footnote">Access content is limited to requested route/path metadata. Message bodies, request bodies, cookies, authorization headers, passwords, and tokens are excluded.</p>
   </main>
   <script src="/static/app.js" defer></script>

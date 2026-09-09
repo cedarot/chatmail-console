@@ -1,5 +1,5 @@
 const csrf = document.body.dataset.csrf;
-const state = { usersPage: 1, usersQuery: {} };
+const state = { usersPage: 1, usersQuery: "" };
 
 function textCell(value) {
   const cell = document.createElement("td");
@@ -50,6 +50,53 @@ function setSourceBadge(id, status) {
   badge.className = `badge ${status?.state === "healthy" ? "ok" : "bad"}`;
 }
 
+function renderActivities(logins, access) {
+  const activities = [
+    ...logins.map((item) => ({
+      timestamp: item.timestamp,
+      activity: "Login",
+      subject: item.userId,
+      device: item.device,
+      details: item.ip,
+    })),
+    ...access.map((item) => ({
+      timestamp: item.timestamp,
+      activity: "Website access",
+      subject: item.ip,
+      device: item.device,
+      details: `${item.method} ${item.path} · ${item.status}`,
+    })),
+  ].sort((left, right) => (right.timestamp || "").localeCompare(left.timestamp || ""));
+  renderTable("activities-table", activities, (item) => [stamp(item.timestamp), item.activity, item.subject, item.device, item.details]);
+}
+
+function selectTab(name) {
+  document.querySelectorAll("[role=tab]").forEach((tab) => {
+    const selected = tab.dataset.tab === name;
+    tab.classList.toggle("is-active", selected);
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+  });
+  document.querySelectorAll("[role=tabpanel]").forEach((panel) => {
+    panel.hidden = panel.id !== `panel-${name}`;
+    panel.classList.toggle("is-active", !panel.hidden);
+  });
+}
+
+function setupTabs() {
+  const tabs = [...document.querySelectorAll("[role=tab]")];
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => selectTab(tab.dataset.tab));
+    tab.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+      tabs[nextIndex].focus();
+      selectTab(tabs[nextIndex].dataset.tab);
+    });
+  });
+}
+
 async function loadSummary() {
   const summary = await api("/api/summary");
   document.getElementById("user-count").textContent = summary.userCount === null ? "—" : summary.userCount;
@@ -59,6 +106,7 @@ async function loadSummary() {
   setSourceBadge("users-status", summary.sources.users);
   setSourceBadge("logins-status", summary.sources.logins);
   setSourceBadge("access-status", summary.sources.access);
+  renderActivities(summary.recentLogins || [], summary.recentAccess || []);
   document.getElementById("last-updated").textContent = `Updated ${stamp(summary.observedAt)}`;
 }
 
@@ -105,4 +153,5 @@ document.getElementById("users-prev").addEventListener("click", () => { if (stat
 document.getElementById("users-next").addEventListener("click", () => { state.usersPage += 1; loadUsers(); });
 document.getElementById("logins-filter").addEventListener("submit", (event) => { event.preventDefault(); loadLogins(); });
 document.getElementById("access-filter").addEventListener("submit", (event) => { event.preventDefault(); loadAccess(); });
+setupTabs();
 refresh();

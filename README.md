@@ -1,6 +1,6 @@
 # Chatmail Console
 
-Chatmail Console is a small, read-only administrative dashboard for a Chatmail deployment. It shows user IDs, recent login events, and website access metadata from configured read-only sources.
+Chatmail Console is a small, read-only administrative dashboard for a Chatmail deployment. Its dashboard is organized into Recent Activities, Recent Logins, Access Events, and Users tabs, backed by configured read-only sources.
 
 The first adapter reads three read-only sources:
 

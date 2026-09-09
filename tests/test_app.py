@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 from http.cookiejar import CookieJar
 
-from app import Config, SourceAdapter, create_server, device_summary, mask_ip, redact_path
+from app import Config, SourceAdapter, create_server, device_summary, mask_ip, redact_path, render_index
 
 
 class AppTests(unittest.TestCase):
@@ -18,6 +18,13 @@ class AppTests(unittest.TestCase):
     def test_masks_ipv4_and_normalizes_device(self):
         self.assertEqual(mask_ip('203.0.113.42'), '203.0.***.***')
         self.assertEqual(device_summary('Mozilla/5.0 (Windows NT 10.0) Chrome/1.0'), 'Chrome on Windows')
+
+    def test_dashboard_has_four_tabbed_views(self):
+        page = render_index("csrf-token")
+        for name in ("activities", "logins", "access", "users"):
+            self.assertIn(f'data-tab="{name}"', page)
+            self.assertIn(f'id="panel-{name}"', page)
+        self.assertIn('id="activities-table"', page)
 
     def test_sources_normalize_and_sort_records(self):
         with tempfile.TemporaryDirectory() as directory:
