@@ -91,57 +91,6 @@ To roll back, point `current` at a previously verified release and recreate the 
 ssh root@8.166.118.0 'set -eu; ln -sfn /srv/chatmail-console/releases/<known-good-revision> /srv/chatmail-console/current; docker compose -p chatmail-console -f /srv/chatmail-console/current/docker-compose.yml --env-file /srv/chatmail-console/.env up -d --no-build'
 ```
 
-## Configuration
-
-| Variable | Purpose | Default |
-| --- | --- | --- |
-| `ADMIN_USERNAME` | Single MVP administrator username | required |
-| `ADMIN_PASSWORD` | Single MVP administrator password | required |
-| `SESSION_SECRET` | HMAC signing secret, at least 32 characters | required |
-| `BIND_ADDRESS` | Host bind address used by Compose | `127.0.0.1` |
-| `CHATMAIL_MAIL_DIR` | Chatmail mail directory mounted read-only at `/data/mail` | `./demo/mail` |
-| `CHATMAIL_MAIL_GID` | Host group ID allowed to enumerate mailbox directories | `996` |
-| `CHATMAIL_ACCESS_LOG_HOST` | Host Nginx access log mounted at `/data/access.log` | `./demo/access.log` |
-| `CHATMAIL_LOGIN_EVENTS_HOST` | Sanitized Dovecot login JSONL mounted at `/data/chatmail.json.log` | `./demo/chatmail.json.log` |
-| `HOST_PORT` | Host port mapped to the container | `8080` |
-| `USERS_SOURCE` | User source, including `maildir:` directory adapter | `maildir:/data/mail` |
-| `LOGINS_SOURCE` | Login source, including `docker-json:` adapter | `docker-json:/data/chatmail.json.log` |
-| `ACCESS_LOG_SOURCE` | Website access log path inside container | `/data/access.log` |
-| `IP_MASKING` | Mask IPs in UI/API by default | `true` |
-| `COOKIE_SECURE` | Mark session cookies Secure when HTTPS is used | `false` |
-| `RETENTION_HOURS` | Maximum event age served by the console | `168` |
-| `PAGE_SIZE_MAX` | Maximum server-side page size | `50` |
-| `ACCESS_LOG_MAX_LINES` | Maximum access-log lines inspected per request | `20000` |
-
-The console strips query strings and fragments from access paths. It does not store an event cache, request bodies, message bodies, cookies, authorization headers, passwords, or tokens. IP masking is enabled by default. Retention is applied when reading events and is finite by default. Mounting `/srv/chatmail-relay/data/mail` is a sensitive read-only operation; use a dedicated deployment account/container mount and do not grant the console write access.
-
-The Compose service receives the Chatmail mail service group as a supplementary group so it can enumerate mailbox directory names. On the current host, the domain directory is owned by group ID `996`; grant that group read/execute access to the domain directory without changing mailbox file ownership or write permissions.
-
-## API and health checks
-
-- `POST /auth/login` and `POST /auth/logout`
-- `GET /api/summary`
-- `GET /api/users?query=&page=&pageSize=`
-- `GET /api/logins?from=&to=&userId=&ip=&page=&pageSize=`
-- `GET /api/access?from=&to=&ip=&path=&method=&statusClass=&page=&pageSize=`
-- `GET /healthz` for process health
-- `GET /readyz` for configuration readiness
-
-All data APIs require authentication. List responses are bounded and include source status. The console reports an unavailable source instead of treating it as zero data.
-
-## Tests
-
-```sh
-python -m unittest discover -s tests -v
-python -m py_compile app.py
-docker compose config
-docker compose build
-```
-
-## Operations
-
-Use `docker compose ps`, `docker compose logs --no-color --tail=200`, and `curl -fsS http://127.0.0.1:8080/healthz` for basic diagnosis. The container is read-only, drops Linux capabilities, uses a non-root user, and has a no-new-privileges security option. The host should provide log rotation for container output. Back up only deployment configuration and the upstream source according to its own retention policy; the console has no persistent event database to back up.
-
 ## Production source configuration
 
 For the current deployment at `8.166.118.0`, create `.env` from `.env.example` and set:
