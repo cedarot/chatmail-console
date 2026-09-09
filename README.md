@@ -29,6 +29,30 @@ Open `http://127.0.0.1:8080`. The default Compose bind address is loopback. For 
 
 The production host uses immutable release directories and a `current` symlink. Keep the runtime `.env` outside the source releases; it contains the administrator password and session secret and must never be committed.
 
+### One-command install or redeploy
+
+After the server-side `.env` has been created as described below, run this from a clean checkout of the reviewed branch. It transfers the current checkout, preserves the server secret, rebuilds the image, and starts the console in one pasteable command:
+
+```sh
+set -eu
+DEPLOY_HOST=8.166.118.0
+DEPLOY_ROOT=/srv/chatmail-console
+REVISION=$(git rev-parse HEAD)
+test -z "$(git status --porcelain)"
+
+git archive --format=tar "$REVISION" | ssh root@"$DEPLOY_HOST" "set -eu
+release=$DEPLOY_ROOT/releases/$REVISION
+mkdir -p \"\$release\"
+tar -xf - -C \"\$release\"
+ln -sfn $DEPLOY_ROOT/.env \"\$release/.env\"
+ln -sfn \"\$release\" $DEPLOY_ROOT/current
+docker compose -p chatmail-console -f $DEPLOY_ROOT/current/docker-compose.yml --env-file $DEPLOY_ROOT/.env up -d --build
+curl -fsS http://127.0.0.1:18080/healthz
+"
+```
+
+The command requires root SSH access to the production host and an existing `/srv/chatmail-console/.env`. It does not print or copy the password or session secret. For first-time secret setup, use the commands below before running the one-command install.
+
 Prepare the host once, then create `/srv/chatmail-console/.env` from `.env.example` with the production source paths. Transfer the private file over SSH and restrict it to root:
 
 ```sh
