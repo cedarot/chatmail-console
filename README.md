@@ -34,6 +34,7 @@ Open `http://127.0.0.1:8080`. The default Compose bind address is loopback. For 
 | `SESSION_SECRET` | HMAC signing secret, at least 32 characters | required |
 | `BIND_ADDRESS` | Host bind address used by Compose | `127.0.0.1` |
 | `CHATMAIL_MAIL_DIR` | Chatmail mail directory mounted read-only at `/data/mail` | `./demo/mail` |
+| `CHATMAIL_MAIL_GID` | Host group ID allowed to enumerate mailbox directories | `996` |
 | `CHATMAIL_ACCESS_LOG_HOST` | Host Nginx access log mounted at `/data/access.log` | `./demo/access.log` |
 | `CHATMAIL_LOGIN_EVENTS_HOST` | Sanitized Dovecot login JSONL mounted at `/data/chatmail.json.log` | `./demo/chatmail.json.log` |
 | `HOST_PORT` | Host port mapped to the container | `8080` |
@@ -47,6 +48,8 @@ Open `http://127.0.0.1:8080`. The default Compose bind address is loopback. For 
 | `ACCESS_LOG_MAX_LINES` | Maximum access-log lines inspected per request | `20000` |
 
 The console strips query strings and fragments from access paths. It does not store an event cache, request bodies, message bodies, cookies, authorization headers, passwords, or tokens. IP masking is enabled by default. Retention is applied when reading events and is finite by default. Mounting `/srv/chatmail-relay/data/mail` is a sensitive read-only operation; use a dedicated deployment account/container mount and do not grant the console write access.
+
+The Compose service receives the Chatmail mail service group as a supplementary group so it can enumerate mailbox directory names. On the current host, the domain directory is owned by group ID `996`; grant that group read/execute access to the domain directory without changing mailbox file ownership or write permissions.
 
 ## API and health checks
 
