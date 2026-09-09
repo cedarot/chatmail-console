@@ -245,10 +245,12 @@ class SourceAdapter:
         records: list[dict[str, Any]] = []
         seen: set[str] = set()
         try:
-            level_one = list(root.iterdir())
-            level_two = [item for item in level_one if item.is_dir()]
-            domains = [item for item in level_two for item in item.iterdir() if item.is_dir()]
-            candidates = [item for domain in domains for item in domain.iterdir() if item.is_dir()]
+            frontier = [root]
+            candidates: list[Path] = []
+            for _ in range(4):
+                next_frontier = [child for parent in frontier for child in parent.iterdir() if child.is_dir()]
+                candidates.extend(child for child in next_frontier if "@" in child.name)
+                frontier = next_frontier
         except OSError as exc:
             raise SourceUnavailable("Configured mailbox directory is unavailable") from exc
         for candidate in candidates:
