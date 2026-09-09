@@ -11,6 +11,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import tempfile
 import time
 from collections import deque
@@ -70,6 +71,10 @@ def write_snapshot(source: Path, target: Path) -> int:
 
 
 def main() -> None:
+    if len(sys.argv) > 1 and sys.argv[1] == "--once":
+        count = write_snapshot(docker_log_path(), OUTPUT)
+        print(json.dumps({"event": "login_events_exported", "count": count}), flush=True)
+        return
     while True:
         try:
             count = write_snapshot(docker_log_path(), OUTPUT)
