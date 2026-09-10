@@ -10,9 +10,9 @@ services:
     environment:
       PORT: "8080"
     volumes:
-      - "${CHATMAIL_MAIL_DIR:-./demo/mail}:/data/mail:ro"
-      - "${CHATMAIL_ACCESS_LOG_HOST:-./demo/access.log}:/data/access.log:ro"
-      - "${CHATMAIL_LOGIN_EVENTS_HOST:-./demo/chatmail.json.log}:/data/chatmail.json.log:ro"
+      - "${CHATMAIL_MAIL_DIR:?CHATMAIL_MAIL_DIR must be set}:/data/mail:ro"
+      - "${CHATMAIL_ACCESS_LOG_HOST:?CHATMAIL_ACCESS_LOG_HOST must be set}:/data/access.log:ro"
+      - "${CHATMAIL_LOGIN_EVENTS_HOST:?CHATMAIL_LOGIN_EVENTS_HOST must be set}:/data/chatmail.json.log:ro"
     read_only: true
     tmpfs:
       - /tmp

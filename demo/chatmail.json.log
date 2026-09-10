@@ -1,1 +1,0 @@
-{"log":"2026-09-09T08:53:08+0000 host dovecot: imap-login: Login: user=<demo@example.test>, method=PLAIN, rip=198.51.100.7, lip=172.23.0.2, mpid=123, TLS, session=<demo>\r\n","stream":"stdout","time":"2099-01-02T09:30:00.000000000Z"}
