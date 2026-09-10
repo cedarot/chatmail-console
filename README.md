@@ -16,7 +16,7 @@ The adapter boundary is intentionally replaceable. The production deployment bel
 cp .env.example .env
 ```
 
-Set the administrator credentials and a long random session secret in `.env`. Keep `.env` private. Then start the console:
+Set the administrator credentials, a long random session secret, and the external source paths in `.env`. No sample data is bundled. Keep `.env` private. Then start the console:
 
 ```sh
 docker compose config

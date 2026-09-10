@@ -1,3 +1,0 @@
-203.0.113.42 - - [02/Jan/2099:10:16:00 +0000] "GET / HTTP/1.1" 200 1240 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36"
-198.51.100.7 - - [02/Jan/2099:09:31:00 +0000] "GET /login?token=should-not-appear HTTP/1.1" 200 980 "-" "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1"
-203.0.113.42 - - [02/Jan/2099:09:00:00 +0000] "GET /missing HTTP/1.1" 404 220 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36"
